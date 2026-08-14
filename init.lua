@@ -31,7 +31,7 @@ end
 vim.opt.rtp:prepend(lazypath)
 
 -- ===================================================================
--- プラグイン  i
+-- プラグイン
 -- ===================================================================
 require("lazy").setup({
   -- skk.nvim: ローカルの開発ディレクトリを直接参照する（dir指定）。
@@ -107,7 +107,7 @@ require("lazy").setup({
           threshold = 2,
           -- 省略時のデフォルト。1にすると、これまで通り最初の<SPC>で即ウィンドウ表示
         },
-        blink = { max_items = 50 },
+        blink = { max_items = 50, debug_timing = true }, -- ★暫定：速度調査用。原因特定後に削除
         dictionaries = #dictionaries > 0 and dictionaries or nil,
         on_dictionary_loaded = function(path, ok, err)
           vim.schedule(function()
@@ -183,8 +183,10 @@ require("lazy").setup({
 })
 
 -- ===================================================================
--- ▽/▼ 表示に合わせて blink.cmp のメニューを show()/hide() する
--- （実機の nvim-config-blink-skkeleton の blink.lua と同じロジック）
+-- ▽/▼ 表示に合わせて blink.cmp のメニューを show()/hide() する。
+-- 【注意】実機の nvim-config-blink-skkeleton の blink.lua 側は、
+-- この providers 指定の修正がまだ反映されていない（今後の移行作業で
+-- 反映する）。
 -- ===================================================================
 vim.api.nvim_create_autocmd("User", {
   pattern = "SkkHenkanChanged",
@@ -197,8 +199,30 @@ vim.api.nvim_create_autocmd("User", {
       blink.hide()
     elseif phase == "midashi" then
       vim.g.my_skk_cmp_suppressed = false
+      local t0 = vim.loop.hrtime() -- ★暫定：速度調査用。原因特定後に削除
       vim.schedule(function()
-        blink.show()
+        -- 読みが1文字変わるたびに、この elseif 節が毎回呼ばれる。
+        -- blink.cmp の show() は「メニューが既に開いていて providers を
+        -- 指定しない場合は何もしない」というガードがあるため、何も考えずに
+        -- blink.show() を呼ぶだけだと、▽に入った直後（読みがまだ空文字）の
+        -- 1回目でメニューが開いた後、2文字目以降の呼び出しはすべて無視されて
+        -- しまう（= 候補リストが更新されない）。
+        --
+        -- skk.nvim の ▽/▼ は extmark（仮想テキスト）表示で実バッファは
+        -- 一切変化しないため、blink.cmp 自身の「実テキストの変更を検知して
+        -- 自動的に再要求する」通常の仕組みも働かない。
+        --
+        -- そのため providers = { "skk" } を明示して呼ぶ。cmp.show() は
+        -- opts.providers が指定されている場合はこのガードをすり抜けて
+        -- 必ず再トリガーする実装になっている（blink.cmp 本体
+        -- lua/blink/cmp/init.lua の show() 参照）。
+        blink.show({ providers = { "skk" } })
+        -- ★暫定：速度調査用。原因特定後に削除。
+        -- get_completions() 単体の計測（blink_source.lua 側）とは別に、
+        -- vim.schedule() のディスパッチ遅延や blink.cmp 本体側の処理
+        -- （ネイティブfuzzyマッチャ・メニュー描画等）込みの体感時間を見る。
+        local elapsed_ms = (vim.loop.hrtime() - t0) / 1e6
+        vim.notify(string.format("[nvim-skk-sandbox timing] show() dispatch: %.1fms", elapsed_ms))
       end)
     else
       vim.g.my_skk_cmp_suppressed = false
