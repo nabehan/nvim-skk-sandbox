@@ -107,7 +107,7 @@ require("lazy").setup({
           threshold = 2,
           -- 省略時のデフォルト。1にすると、これまで通り最初の<SPC>で即ウィンドウ表示
         },
-        blink = { max_items = 50, debug_timing = true }, -- ★暫定：速度調査用。原因特定後に削除
+        blink = { max_items = 50, skip_skkserv = false, debug_timing = true },
         dictionaries = #dictionaries > 0 and dictionaries or nil,
         on_dictionary_loaded = function(path, ok, err)
           vim.schedule(function()
