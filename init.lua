@@ -172,7 +172,11 @@ require("lazy").setup({
             min_keyword_length = 0,
             score_offset = 100,
             enabled = function()
-              return require("skk.henkan.state").get_phase() == "midashi"
+              -- "midashi"（▽、通常のかな漢字変換）だけでなく "abbrev"
+              -- （▽、"/" で始める英字そのままの見出し）でも有効にする
+              -- （実機で発見：abbrev だけライブ補完が出ない不具合があった）。
+              local phase = require("skk.henkan.state").get_phase()
+              return phase == "midashi" or phase == "abbrev"
             end,
           },
         },
@@ -197,7 +201,7 @@ vim.api.nvim_create_autocmd("User", {
     if phase == "select" then
       vim.g.my_skk_cmp_suppressed = true
       blink.hide()
-    elseif phase == "midashi" then
+    elseif phase == "midashi" or phase == "abbrev" then
       vim.g.my_skk_cmp_suppressed = false
       local t0 = vim.loop.hrtime() -- ★暫定：速度調査用。原因特定後に削除
       vim.schedule(function()
