@@ -44,12 +44,23 @@ require("lazy").setup({
     lazy = false,
     config = function()
       local skk = require("skk")
+      local dict = require("skk.dict")
+      local parser = require("skk.dict.jisyo_parser")
 
       -- setup() に渡す skkserv 設定。通知ブロック側でも参照するため
       -- 先に変数として持っておく（skk.setup はセットアップ「関数」であり
       -- オプションテーブルではないので、skk.setup.skkserv のような参照は
       -- 「関数を index しようとしてエラー」になる）。
       local skkserv_opts = { host = "127.0.0.1", port = 1178, encoding = "euc-jp" }
+
+      -- ローカル辞書。空にすると、下の組み込みの小さな確認用辞書が使われる
+      -- （dictionaries が空のときに setup() へ渡さないのはこのサンドボックス
+      -- だけの便宜機能。skk.nvim 本体の setup() には無い）。
+      local dictionaries = {
+        { path = "/usr/local/share/skk/SKK-JISYO.edict2", encoding = "utf-8" },
+        { path = "/usr/local/share/skk/SKK-JISYO.emoji", encoding = "utf-8" },
+        { path = "/usr/local/share/skk/SKK-JISYO.emoji-ja", encoding = "utf-8" },
+      }
 
       skk.setup({
         skkserv = skkserv_opts,
@@ -69,31 +80,19 @@ require("lazy").setup({
           -- 省略時のデフォルト。1にすると、これまで通り最初の<SPC>で即ウィンドウ表示
         },
         blink = { max_items = 50 },
+        dictionaries = #dictionaries > 0 and dictionaries or nil,
+        on_dictionary_loaded = function(path, ok, err)
+          vim.schedule(function()
+            if ok then
+              vim.notify("skk.nvim: dictionary loaded: " .. path)
+            else
+              vim.notify("skk.nvim: failed to load " .. path .. ": " .. tostring(err), vim.log.levels.WARN)
+            end
+          end)
+        end,
       })
 
-      -- ローカル辞書の読み込み（上の dictionaries テーブルに基づく）
-      local dict = require("skk.dict")
-      local parser = require("skk.dict.jisyo_parser")
-
-      local dictionaries = {
-        { path = "/usr/local/share/skk/SKK-JISYO.edict2", encoding = "utf-8" },
-        { path = "/usr/local/share/skk/SKK-JISYO.emoji", encoding = "utf-8" },
-        { path = "/usr/local/share/skk/SKK-JISYO.emoji-ja", encoding = "utf-8" },
-      }
-
-      if #dictionaries > 0 then
-        for _, entry in ipairs(dictionaries) do
-          dict.add_dictionary_async(entry.path, entry.encoding, function(ok, err)
-            vim.schedule(function()
-              if ok then
-                vim.notify("skk.nvim: dictionary loaded: " .. entry.path)
-              else
-                vim.notify("skk.nvim: failed to load " .. entry.path .. ": " .. tostring(err), vim.log.levels.WARN)
-              end
-            end)
-          end, nil, entry.path)
-        end
-      else
+      if #dictionaries == 0 then
         -- 動作確認用の小さな組み込み辞書（送りなし・送りあり両方のサンプルを含む）
         local mini_jisyo = table.concat({
           ";; okuri-ari entries.",
