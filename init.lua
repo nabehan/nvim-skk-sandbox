@@ -57,7 +57,7 @@ require("lazy").setup({
       -- （dictionaries が空のときに setup() へ渡さないのはこのサンドボックス
       -- だけの便宜機能。skk.nvim 本体の setup() には無い）。
       local dictionaries = {
-        -- { path = "/usr/local/share/skk/SKK-JISYO.jawiki", encoding = "utf-8" },
+        { path = "/usr/local/share/skk/SKK-JISYO.jawiki", encoding = "utf-8" },
         { path = "/usr/local/share/skk/SKK-JISYO.edict2", encoding = "utf-8" },
         { path = "/usr/local/share/skk/SKK-JISYO.emoji", encoding = "utf-8" },
         { path = "/usr/local/share/skk/SKK-JISYO.emoji-ja", encoding = "utf-8" },

@@ -1,0 +1,8 @@
+.DS_Store
+*.swp
+/.tests/
+/.luarc.json
+/bkup/
+test.log
+prompt.md
+search_test.md
