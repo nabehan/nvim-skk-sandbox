@@ -45,8 +45,14 @@ require("lazy").setup({
     config = function()
       local skk = require("skk")
 
+      -- setup() に渡す skkserv 設定。通知ブロック側でも参照するため
+      -- 先に変数として持っておく（skk.setup はセットアップ「関数」であり
+      -- オプションテーブルではないので、skk.setup.skkserv のような参照は
+      -- 「関数を index しようとしてエラー」になる）。
+      local skkserv_opts = { host = "127.0.0.1", port = 1178, encoding = "euc-jp" }
+
       skk.setup({
-        skkserv = { host = "127.0.0.1", port = 1178, encoding = "euc-jp" },
+        skkserv = skkserv_opts,
         user_dictionary = vim.fn.expand("~/.local/share/skk/SKK-JISYO.user"),
         enter_key = "<C-j>",
         sticky_shift_enabled = true,
@@ -105,29 +111,28 @@ require("lazy").setup({
         end)
       end
 
-      -- -- SKKサーバーの疎通確認（設定されていれば、バージョン文字列を表示する）。
-      -- if skk.setup.skkserv then
-      --   vim.schedule(function()
-      --     local version = dict.skkserv_version()
-      --     if version then
-      --       vim.notify("skk.nvim: skkserv version: " .. version)
-      --     else
-      --       local detail = dict.skkserv_last_connect_error()
-      --       vim.notify(
-      --         "skk.nvim: skkserv に接続できませんでした ("
-      --           .. skk.setup.skkserv.host
-      --           .. ":"
-      --           .. skk.setup.skkserv.port
-      --           .. ")。status="
-      --           .. dict.skkserv_status()
-      --           .. (detail and (" error=" .. tostring(detail)) or "")
-      --           .. "。ホスト/ポート、サーバーの起動状態を確認してください。",
-      --         vim.log.levels.WARN
-      --       )
-      --     end
-      --   end)
-      -- end
-      --
+      -- SKKサーバーの疎通確認（設定されていれば、バージョン文字列を表示する）。
+      if skkserv_opts then
+        vim.schedule(function()
+          local version = dict.skkserv_version()
+          if version then
+            vim.notify("skk.nvim: skkserv version: " .. version)
+          else
+            local detail = dict.skkserv_last_connect_error()
+            vim.notify(
+              "skk.nvim: skkserv に接続できませんでした ("
+                .. skkserv_opts.host
+                .. ":"
+                .. skkserv_opts.port
+                .. ")。status="
+                .. dict.skkserv_status()
+                .. (detail and (" error=" .. tostring(detail)) or "")
+                .. "。ホスト/ポート、サーバーの起動状態を確認してください。",
+              vim.log.levels.WARN
+            )
+          end
+        end)
+      end
     end,
   },
 
