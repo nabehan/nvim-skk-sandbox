@@ -57,10 +57,38 @@ require("lazy").setup({
       -- （dictionaries が空のときに setup() へ渡さないのはこのサンドボックス
       -- だけの便宜機能。skk.nvim 本体の setup() には無い）。
       local dictionaries = {
+        -- { path = "/usr/local/share/skk/SKK-JISYO.jawiki", encoding = "utf-8" },
         { path = "/usr/local/share/skk/SKK-JISYO.edict2", encoding = "utf-8" },
         { path = "/usr/local/share/skk/SKK-JISYO.emoji", encoding = "utf-8" },
         { path = "/usr/local/share/skk/SKK-JISYO.emoji-ja", encoding = "utf-8" },
       }
+
+      -- 辞書の読み込み完了数をカウントする変数 for develop
+      local loaded_count = 0
+
+      -- skkserv の疎通確認を行う関数 for develop
+      local function check_skkserv()
+        if not skkserv_opts then
+          return
+        end
+        local version = dict.skkserv_version()
+        if version then
+          vim.notify("skk.nvim: skkserv version: " .. version)
+        else
+          local detail = dict.skkserv_last_connect_error()
+          vim.notify(
+            "skk.nvim: skkserv に接続できませんでした ("
+              .. skkserv_opts.host
+              .. ":"
+              .. skkserv_opts.port
+              .. ")。status="
+              .. dict.skkserv_status()
+              .. (detail and (" error=" .. tostring(detail)) or "")
+              .. "。ホスト/ポート、サーバーの起動状態を確認してください。",
+            vim.log.levels.WARN
+          )
+        end
+      end
 
       skk.setup({
         skkserv = skkserv_opts,
@@ -88,11 +116,19 @@ require("lazy").setup({
             else
               vim.notify("skk.nvim: failed to load " .. path .. ": " .. tostring(err), vim.log.levels.WARN)
             end
+            -- 辞書のカウントを進める
+            loaded_count = loaded_count + 1
+            -- すべてのローカル辞書の読み込みが終わったら skkserv の疎通確認を実行する
+            if loaded_count >= #dictionaries then
+              check_skkserv()
+            end
           end)
         end,
       })
 
       if #dictionaries == 0 then
+        -- ローカル辞書が指定されていない場合は直ちに疎通確認を実行する
+        check_skkserv()
         -- 動作確認用の小さな組み込み辞書（送りなし・送りあり両方のサンプルを含む）
         local mini_jisyo = table.concat({
           ";; okuri-ari entries.",
@@ -107,29 +143,6 @@ require("lazy").setup({
         dict.set_dict(parser.parse(mini_jisyo))
         vim.schedule(function()
           vim.notify("skk.nvim: using built-in mini dictionary (init.lua の dictionaries を編集してください)")
-        end)
-      end
-
-      -- SKKサーバーの疎通確認（設定されていれば、バージョン文字列を表示する）。
-      if skkserv_opts then
-        vim.schedule(function()
-          local version = dict.skkserv_version()
-          if version then
-            vim.notify("skk.nvim: skkserv version: " .. version)
-          else
-            local detail = dict.skkserv_last_connect_error()
-            vim.notify(
-              "skk.nvim: skkserv に接続できませんでした ("
-                .. skkserv_opts.host
-                .. ":"
-                .. skkserv_opts.port
-                .. ")。status="
-                .. dict.skkserv_status()
-                .. (detail and (" error=" .. tostring(detail)) or "")
-                .. "。ホスト/ポート、サーバーの起動状態を確認してください。",
-              vim.log.levels.WARN
-            )
-          end
         end)
       end
     end,
