@@ -51,7 +51,7 @@ require("lazy").setup({
       -- 先に変数として持っておく（skk.setup はセットアップ「関数」であり
       -- オプションテーブルではないので、skk.setup.skkserv のような参照は
       -- 「関数を index しようとしてエラー」になる）。
-      local skkserv_opts = { host = "127.0.0.1", port = 1178, encoding = "euc-jp" }
+      local skkserv_opts = { host = "127.0.0.1", port = 1178, encoding = "euc-jp", debug = true } -- ★暫定：debug=true は速度調査用。原因特定後に削除
 
       -- ローカル辞書。空にすると、下の組み込みの小さな確認用辞書が使われる
       -- （dictionaries が空のときに setup() へ渡さないのはこのサンドボックス
@@ -107,7 +107,7 @@ require("lazy").setup({
           threshold = 2,
           -- 省略時のデフォルト。1にすると、これまで通り最初の<SPC>で即ウィンドウ表示
         },
-        blink = { max_items = 50, skip_skkserv = false, debug_timing = true },
+        blink = { max_items = 5, skip_skkserv = false, debug_timing = true }, -- ★暫定：max_items=5 は速度調査用。原因特定後に50へ戻す
         dictionaries = #dictionaries > 0 and dictionaries or nil,
         on_dictionary_loaded = function(path, ok, err)
           vim.schedule(function()
