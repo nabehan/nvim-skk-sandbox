@@ -116,7 +116,7 @@ require("lazy").setup({
           skkserv_candidates = true,
           -- "1"（実際の変換候補=漢字の取得）にSKKサーバーを含めるか。
           -- falseにすると個人辞書・ローカル辞書の候補のみになる。省略時true
-          skkserv_candidate_limit = 20,
+          skkserv_candidate_limit = 50,
           -- SKKサーバーへ実際に"1"を投げる読みの上限件数（skkserv_candidates=true
           -- のときのみ意味を持つ）。増やすほど、ライブ補完メニューの下の方まで
           -- 漢字候補が出るようになる代わりに、その分だけキー入力ごとの直列
