@@ -51,8 +51,8 @@ require("lazy").setup({
       -- 先に変数として持っておく（skk.setup はセットアップ「関数」であり
       -- オプションテーブルではないので、skk.setup.skkserv のような参照は
       -- 「関数を index しようとしてエラー」になる）。
-      -- local skkserv_opts = { host = "127.0.0.1", port = 1178, encoding = "euc-jp", debug = true } -- ★暫定：debug=true は速度調査用。原因特定後に削除
-      local skkserv_opts = { host = "127.0.0.1", port = 1178, encoding = "euc-jp" }
+      local skkserv_opts = { host = "127.0.0.1", port = 1178, encoding = "euc-jp", debug = false } -- ★暫定：debug=true は速度調査用。原因特定後に削除
+      -- local skkserv_opts = { host = "127.0.0.1", port = 1178, encoding = "euc-jp" }
       -- ローカル辞書。空にすると、下の組み込みの小さな確認用辞書が使われる
       -- （dictionaries が空のときに setup() へ渡さないのはこのサンドボックス
       -- だけの便宜機能。skk.nvim 本体の setup() には無い）。
@@ -116,7 +116,7 @@ require("lazy").setup({
           skkserv_candidates = true,
           -- "1"（実際の変換候補=漢字の取得）にSKKサーバーを含めるか。
           -- falseにすると個人辞書・ローカル辞書の候補のみになる。省略時true
-          skkserv_candidate_limit = 50,
+          skkserv_candidate_limit = 20,
           -- SKKサーバーへ実際に"1"を投げる読みの上限件数（skkserv_candidates=true
           -- のときのみ意味を持つ）。増やすほど、ライブ補完メニューの下の方まで
           -- 漢字候補が出るようになる代わりに、その分だけキー入力ごとの直列
@@ -126,7 +126,7 @@ require("lazy").setup({
           -- 従来通り変換候補は見られる）。体感を比較したいときはこの値と、
           -- 下のdebug_timing=trueを併用するとよい（キー入力ごとに
           -- [skk.nvim timing] ... skkserv_calls=N ... のログが出る）。
-          debug_timing = true,
+          debug_timing = false,
         },
         dictionaries = #dictionaries > 0 and dictionaries or nil,
         on_dictionary_loaded = function(path, ok, err)
