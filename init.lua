@@ -108,7 +108,26 @@ require("lazy").setup({
           -- 省略時のデフォルト。1にすると、これまで通り最初の<SPC>で即ウィンドウ表示
         },
         -- blink = { max_items = 5, skip_skkserv = false, debug_timing = true }, -- ★暫定：max_items=5 は速度調査用。原因特定後に50へ戻す
-        blink = { max_items = 50, skip_skkserv = false, debug_timing = false },
+        blink = {
+          max_items = 50,
+          -- 前方一致で取得する読みの上限件数。省略時50
+          skip_skkserv = false,
+          -- "4"（読み一覧取得）にSKKサーバーを含めるか。省略時false（含める）
+          skkserv_candidates = true,
+          -- "1"（実際の変換候補=漢字の取得）にSKKサーバーを含めるか。
+          -- falseにすると個人辞書・ローカル辞書の候補のみになる。省略時true
+          skkserv_candidate_limit = 50,
+          -- SKKサーバーへ実際に"1"を投げる読みの上限件数（skkserv_candidates=true
+          -- のときのみ意味を持つ）。増やすほど、ライブ補完メニューの下の方まで
+          -- 漢字候補が出るようになる代わりに、その分だけキー入力ごとの直列
+          -- ラウンドトリップが増えて体感が重くなりうる。逆に減らす（0にすると
+          -- 実質skkserv_candidates=falseと同じ）ほど軽くなるが、上限を超えた
+          -- 読みは「読みのみ」のフォールバック項目になる（<SPC>で▼へ進めば
+          -- 従来通り変換候補は見られる）。体感を比較したいときはこの値と、
+          -- 下のdebug_timing=trueを併用するとよい（キー入力ごとに
+          -- [skk.nvim timing] ... skkserv_calls=N ... のログが出る）。
+          debug_timing = false,
+        },
         dictionaries = #dictionaries > 0 and dictionaries or nil,
         on_dictionary_loaded = function(path, ok, err)
           vim.schedule(function()
