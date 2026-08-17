@@ -204,7 +204,6 @@ vim.api.nvim_create_autocmd("User", {
       blink.hide()
     elseif phase == "midashi" or phase == "abbrev" then
       vim.g.my_skk_cmp_suppressed = false
-      local t0 = vim.loop.hrtime() -- ★暫定：速度調査用。原因特定後に削除
       vim.schedule(function()
         -- 読みが1文字変わるたびに、この elseif 節が毎回呼ばれる。
         -- blink.cmp の show() は「メニューが既に開いていて providers を
@@ -222,12 +221,6 @@ vim.api.nvim_create_autocmd("User", {
         -- 必ず再トリガーする実装になっている（blink.cmp 本体
         -- lua/blink/cmp/init.lua の show() 参照）。
         blink.show({ providers = { "skk" } })
-        -- ★暫定：速度調査用。原因特定後に削除。
-        -- get_completions() 単体の計測（blink_source.lua 側）とは別に、
-        -- vim.schedule() のディスパッチ遅延や blink.cmp 本体側の処理
-        -- （ネイティブfuzzyマッチャ・メニュー描画等）込みの体感時間を見る。
-        local elapsed_ms = (vim.loop.hrtime() - t0) / 1e6
-        vim.notify(string.format("[nvim-skk-sandbox timing] show() dispatch: %.1fms", elapsed_ms))
       end)
     else
       vim.g.my_skk_cmp_suppressed = false
