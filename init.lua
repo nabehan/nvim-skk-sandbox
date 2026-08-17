@@ -116,7 +116,7 @@ require("lazy").setup({
           skkserv_candidates = true,
           -- "1"（実際の変換候補=漢字の取得）にSKKサーバーを含めるか。
           -- falseにすると個人辞書・ローカル辞書の候補のみになる。省略時true
-          skkserv_candidate_limit = 20,
+          skkserv_candidate_limit = 50,
           -- SKKサーバーへ実際に"1"を投げる読みの上限件数（skkserv_candidates=true
           -- のときのみ意味を持つ）。増やすほど、ライブ補完メニューの下の方まで
           -- 漢字候補が出るようになる代わりに、その分だけキー入力ごとの直列
@@ -126,6 +126,19 @@ require("lazy").setup({
           -- 従来通り変換候補は見られる）。体感を比較したいときはこの値と、
           -- 下のdebug_timing=trueを併用するとよい（キー入力ごとに
           -- [skk.nvim timing] ... skkserv_calls=N ... のログが出る）。
+          --
+          -- 【実機で発見・重要】abbrevモード（</>で入る、ASCII文字列を
+          -- そのまま前方一致検索するモード）は、かな読みでのライブ補完より
+          -- 体感が遅くなりやすい。原因は往復回数そのものというより、辞書
+          -- 側の変則エントリ（プログラム候補構文が読みに紛れ込んだもの、
+          -- 例: jawiki辞書の"a(concat ...)"）にabbrevモードが当たりやすく、
+          -- yaskkserv2のgoogle-japanese-inputフォールバック（既定
+          -- notfound）がタイムアウトするまで詰まるため（skk.nvim側は
+          -- "(" ")" '"' "\\" を含む読みへは"1"を送らない防御を追加済みだが、
+          -- 未知のパターンが今後見つかる可能性はある）。詳細は
+          -- skk.nvimのREADME.md「SKKサーバーとの通信の信頼性」の6番目の
+          -- 項目参照。根本的に気になる場合はyaskkserv2.conf側で
+          -- google-japanese-input = disable も検討できる。
           debug_timing = false,
         },
         dictionaries = #dictionaries > 0 and dictionaries or nil,
