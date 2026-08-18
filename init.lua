@@ -51,7 +51,20 @@ require("lazy").setup({
       -- 先に変数として持っておく（skk.setup はセットアップ「関数」であり
       -- オプションテーブルではないので、skk.setup.skkserv のような参照は
       -- 「関数を index しようとしてエラー」になる）。
-      local skkserv_opts = { host = "127.0.0.1", port = 1178, encoding = "euc-jp", debug = false } -- ★暫定：debug=true は速度調査用。原因特定後に削除
+      local skkserv_opts = {
+        host = "127.0.0.1",
+        port = 1178,
+        encoding = "euc-jp",
+        debug = false, -- ★暫定：debug=true は速度調査用。原因特定後に削除
+        -- 起動時の疎通確認（skk.setup()が自動実行、skkserv.check_connection、
+        -- 省略時true）1回あたりのタイムアウト。省略時2000msだが、大きな辞書
+        -- （jawiki等）読み込み中の混雑を見込んで長めに取ってあるため、その分
+        -- 起動時の体感待ち時間が伸びる。環境に合わせて短くしたい場合はここを
+        -- 調整する（短くしすぎると、健全な接続でも誤ってタイムアウト扱いに
+        -- なりやすくなる点に注意。lua/skk/init.luaのSkkSetupOptsのdocstring、
+        -- およびREADME.md「SKKサーバーとの通信の信頼性」参照）。
+        check_connection_timeout_ms = 400,
+      }
       -- local skkserv_opts = { host = "127.0.0.1", port = 1178, encoding = "euc-jp" }
       -- ローカル辞書。空にすると、下の組み込みの小さな確認用辞書が使われる
       -- （dictionaries が空のときに setup() へ渡さないのはこのサンドボックス
@@ -86,8 +99,8 @@ require("lazy").setup({
           -- 配色（すべて省略時はカラースキームのNormalFloat/FloatBorderのまま、
           -- 現状と同じ見た目）。試したい場合はコメントを外す:
           -- fg = "#d8dee9", bg = "#2e3440",       -- 非選択の候補行
-          -- border_fg = "#88c0d0",                -- 枠線
-          -- alt_bg = "#3b4252", -- 1行おきの縞模様（可読性向上、省略時は縞なし）
+          border_fg = "#88c0d0", -- 枠線
+          alt_bg = "#1b4252", -- 1行おきの縞模様（可読性向上、省略時は縞なし）
         },
         -- ▽/▼のインライン表示の配色（省略時はComment/IncSearchのまま、現状と同じ）。
         -- candidate_fg/bgは候補ウィンドウの選択行のハイライトにも連動する。
@@ -101,7 +114,7 @@ require("lazy").setup({
           skkserv_candidates = true,
           -- "1"（実際の変換候補=漢字の取得）にSKKサーバーを含めるか。
           -- falseにすると個人辞書・ローカル辞書の候補のみになる。省略時true
-          skkserv_candidate_limit = 20,
+          skkserv_candidate_limit = 50,
           -- SKKサーバーへ実際に"1"を投げる読みの上限件数（skkserv_candidates=true
           -- のときのみ意味を持つ）。増やすほど、ライブ補完メニューの下の方まで
           -- 漢字候補が出るようになる代わりに、その分だけキー入力ごとの直列
