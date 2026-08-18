@@ -66,30 +66,6 @@ require("lazy").setup({
       -- 辞書の読み込み完了数をカウントする変数 for develop
       local loaded_count = 0
 
-      -- skkserv の疎通確認を行う関数 for develop
-      local function check_skkserv()
-        if not skkserv_opts then
-          return
-        end
-        local version = dict.skkserv_version()
-        if version then
-          vim.notify("skk.nvim: skkserv version: " .. version)
-        else
-          local detail = dict.skkserv_last_connect_error()
-          vim.notify(
-            "skk.nvim: skkserv に接続できませんでした ("
-              .. skkserv_opts.host
-              .. ":"
-              .. skkserv_opts.port
-              .. ")。status="
-              .. dict.skkserv_status()
-              .. (detail and (" error=" .. tostring(detail)) or "")
-              .. "。ホスト/ポート、サーバーの起動状態を確認してください。",
-            vim.log.levels.WARN
-          )
-        end
-      end
-
       skk.setup({
         skkserv = skkserv_opts,
         user_dictionary = vim.fn.expand("~/.local/share/skk/SKK-JISYO.user"),
@@ -106,7 +82,16 @@ require("lazy").setup({
           -- false にすると最下行のページ表示（"2/3"など）を出さない
           threshold = 2,
           -- 省略時のデフォルト。1にすると、これまで通り最初の<SPC>で即ウィンドウ表示
+          --
+          -- 配色（すべて省略時はカラースキームのNormalFloat/FloatBorderのまま、
+          -- 現状と同じ見た目）。試したい場合はコメントを外す:
+          -- fg = "#d8dee9", bg = "#2e3440",       -- 非選択の候補行
+          -- border_fg = "#88c0d0",                -- 枠線
+          -- alt_bg = "#3b4252", -- 1行おきの縞模様（可読性向上、省略時は縞なし）
         },
+        -- ▽/▼のインライン表示の配色（省略時はComment/IncSearchのまま、現状と同じ）。
+        -- candidate_fg/bgは候補ウィンドウの選択行のハイライトにも連動する。
+        -- midashi_fg = "#81a1c1", candidate_fg = "#ebcb8b", candidate_bg = "#4c566a",
         -- blink = { max_items = 5, skip_skkserv = false, debug_timing = true }, -- ★暫定：max_items=5 は速度調査用。原因特定後に50へ戻す
         blink = {
           max_items = 50,
@@ -116,7 +101,7 @@ require("lazy").setup({
           skkserv_candidates = true,
           -- "1"（実際の変換候補=漢字の取得）にSKKサーバーを含めるか。
           -- falseにすると個人辞書・ローカル辞書の候補のみになる。省略時true
-          skkserv_candidate_limit = 50,
+          skkserv_candidate_limit = 20,
           -- SKKサーバーへ実際に"1"を投げる読みの上限件数（skkserv_candidates=true
           -- のときのみ意味を持つ）。増やすほど、ライブ補完メニューの下の方まで
           -- 漢字候補が出るようになる代わりに、その分だけキー入力ごとの直列
@@ -151,18 +136,15 @@ require("lazy").setup({
             end
             -- 辞書のカウントを進める
             loaded_count = loaded_count + 1
-            -- すべてのローカル辞書の読み込みが終わったら skkserv の疎通確認を実行する
-            if loaded_count >= #dictionaries then
-              check_skkserv()
-            end
           end)
         end,
       })
 
       if #dictionaries == 0 then
-        -- ローカル辞書が指定されていない場合は直ちに疎通確認を実行する
-        check_skkserv()
-        -- 動作確認用の小さな組み込み辞書（送りなし・送りあり両方のサンプルを含む）
+        -- ローカル辞書が指定されていない場合の動作確認用の小さな組み込み辞書
+        -- （送りなし・送りあり両方のサンプルを含む）。skkservの疎通確認は
+        -- skk.setup()側で自動的に行われる（skkserv.check_connection、
+        -- 省略時true。lua/skk/init.luaのSkkSetupOptsのdocstring参照）。
         local mini_jisyo = table.concat({
           ";; okuri-ari entries.",
           "うごk /動/",
