@@ -63,7 +63,7 @@ require("lazy").setup({
         -- 調整する（短くしすぎると、健全な接続でも誤ってタイムアウト扱いに
         -- なりやすくなる点に注意。lua/skk/init.luaのSkkSetupOptsのdocstring、
         -- およびREADME.md「SKKサーバーとの通信の信頼性」参照）。
-        check_connection_timeout_ms = 400,
+        check_connection_timeout_ms = 350,
       }
       -- local skkserv_opts = { host = "127.0.0.1", port = 1178, encoding = "euc-jp" }
       -- ローカル辞書。空にすると、下の組み込みの小さな確認用辞書が使われる
@@ -102,10 +102,22 @@ require("lazy").setup({
           border_fg = "#88c0d0", -- 枠線
           alt_bg = "#1b4252", -- 1行おきの縞模様（可読性向上、省略時は縞なし）
         },
+
         -- ▽/▼のインライン表示の配色（省略時はComment/IncSearchのまま、現状と同じ）。
         -- candidate_fg/bgは候補ウィンドウの選択行のハイライトにも連動する。
         -- midashi_fg = "#81a1c1", candidate_fg = "#ebcb8b", candidate_bg = "#4c566a",
-        -- blink = { max_items = 5, skip_skkserv = false, debug_timing = true }, -- ★暫定：max_items=5 は速度調査用。原因特定後に50へ戻す
+
+        -- 【実機で発見・重要】<C-n>/<C-p> による候補選択フォーカス移動は、
+        -- skk.nvim 本体の candidate_navigation（setup()時に既存マッピングを
+        -- 1回だけ捕捉してグローバルな <C-n>/<C-p> を張る仕組み）では
+        -- このsandboxの構成（blink.cmpのキーマップがバッファローカル・
+        -- 遅延適用のため）だと機能しない（blink.cmp側が後から張る
+        -- バッファローカルなマッピングに必ず上書きされてしまう）。
+        -- 代わりに下の blink.cmp 側の keymap 設定（<C-n>/<C-p> の
+        -- カスタム関数コマンド）で対応しているため、ここでは無効化して
+        -- 混乱を避ける。
+        candidate_navigation = { enabled = false },
+
         blink = {
           max_items = 50,
           -- 前方一致で取得する読みの上限件数。省略時50
@@ -139,6 +151,7 @@ require("lazy").setup({
           -- google-japanese-input = disable も検討できる。
           debug_timing = false,
         },
+
         dictionaries = #dictionaries > 0 and dictionaries or nil,
         on_dictionary_loaded = function(path, ok, err)
           vim.schedule(function()
@@ -181,7 +194,60 @@ require("lazy").setup({
     version = "1.*",
     dependencies = { "rafamadriz/friendly-snippets" },
     opts = {
-      keymap = { preset = "default" },
+      keymap = {
+        preset = "default",
+
+        -- ===============================================================
+        -- 【実機で発見・重要】<C-n>/<C-p> と skk.nvim の候補選択の競合。
+        --
+        -- blink.cmp の <C-n>/<C-p>（preset="default" では
+        -- {"select_next"/"select_prev", "fallback_to_mappings"}）は
+        -- バッファローカルかつ遅延適用（ModeChanged 契機）で張られるため、
+        -- skk.nvim 側から一方的にグローバルキーマップで奪おうとしても
+        -- 後から blink.cmp 側に上書きされてしまい効かない
+        -- （skk.setup() の candidate_navigation はこの sandbox では
+        -- 明示的に無効化してある。上のskk.setup()呼び出し参照）。
+        --
+        -- さらに "fallback_to_mappings" は「他の“本物の”キーマップが
+        -- 無ければ何もせずキーを飲み込む」動作のため、skk.nvim が
+        -- vim.on_key() しか使っていない状態では、blink.cmp 側の
+        -- is_enabled()（sources.providers.skk.enabled 相当ではなく
+        -- 全体の enabled）による抑制が正しく効いていたとしても、
+        -- 候補一覧ウィンドウ表示中（▼/"select"フェーズ）に <C-n>/<C-p> が
+        -- 完全に無効化されてしまう不具合があった。
+        --
+        -- 対策として、blink.cmp 自身がサポートするキーマップの
+        -- カスタム関数コマンドを使う。henkan が ▼(select) フェーズなら
+        -- skk.nvim 側の候補選択を実行して true を返し（そこでチェーンを
+        -- 打ち切る）、そうでなければ false を返して従来通り
+        -- "select_next"/"select_prev" → "fallback_to_mappings" の
+        -- チェーンに委ねる（preset="default" と同じ動作を維持）。
+        -- この方式なら読み込み順序やバッファローカルの優先順位を
+        -- 一切気にする必要がない。
+        -- ===============================================================
+        ["<C-n>"] = {
+          function()
+            if require("skk.henkan.state").get_phase() == "select" then
+              require("skk.henkan.state").focus_next()
+              return true
+            end
+            return false
+          end,
+          "select_next",
+          "fallback_to_mappings",
+        },
+        ["<C-p>"] = {
+          function()
+            if require("skk.henkan.state").get_phase() == "select" then
+              require("skk.henkan.state").focus_prev()
+              return true
+            end
+            return false
+          end,
+          "select_prev",
+          "fallback_to_mappings",
+        },
+      },
       appearance = { nerd_font_variant = "mono" },
       completion = {
         list = { selection = { preselect = true, auto_insert = false } },
