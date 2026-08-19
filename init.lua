@@ -105,7 +105,9 @@ require("lazy").setup({
 
         -- ▽/▼のインライン表示の配色（省略時はComment/IncSearchのまま、現状と同じ）。
         -- candidate_fg/bgは候補ウィンドウの選択行のハイライトにも連動する。
-        -- midashi_fg = "#81a1c1", candidate_fg = "#ebcb8b", candidate_bg = "#4c566a",
+        midashi_fg = "#ff9e64", -- "#81a1c1",
+        -- candidate_fg = "#000000", -- "#4c566a",
+        -- candidate_bg = "#ebcb8b",
 
         -- 【実機で発見・重要】<C-n>/<C-p> による候補選択フォーカス移動は、
         -- skk.nvim 本体の candidate_navigation（setup()時に既存マッピングを
@@ -224,11 +226,22 @@ require("lazy").setup({
         -- チェーンに委ねる（preset="default" と同じ動作を維持）。
         -- この方式なら読み込み順序やバッファローカルの優先順位を
         -- 一切気にする必要がない。
+        --
+        -- 【実機で発見・重要】通常バッファで E565（textlock）エラーが発生した。
+        -- blink.cmp のキーマップコールバック実行中（＝Neovimがキー入力処理の
+        -- 最中でtextlockが有効な状態）に focus_next()/focus_prev() を直接
+        -- 呼ぶと、その先の candidate_window.show() が行う
+        -- nvim_open_win()/nvim_buf_set_lines() がtextlockに阻まれてエラーに
+        -- なる（コマンドラインで問題が出なかったのは、そちらはskk.nvim本体の
+        -- vim.on_key() 経由で、このtextlockされた文脈を通らないため）。
+        -- vim.schedule() でイベントループの次ティックに逃がすことで解消する。
         -- ===============================================================
         ["<C-n>"] = {
           function()
             if require("skk.henkan.state").get_phase() == "select" then
-              require("skk.henkan.state").focus_next()
+              vim.schedule(function()
+                require("skk.henkan.state").focus_next()
+              end)
               return true
             end
             return false
@@ -239,7 +252,9 @@ require("lazy").setup({
         ["<C-p>"] = {
           function()
             if require("skk.henkan.state").get_phase() == "select" then
-              require("skk.henkan.state").focus_prev()
+              vim.schedule(function()
+                require("skk.henkan.state").focus_prev()
+              end)
               return true
             end
             return false
