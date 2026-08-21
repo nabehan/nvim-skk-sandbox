@@ -47,26 +47,15 @@ require("lazy").setup({
       local dict = require("skk.dict")
       local parser = require("skk.dict.jisyo_parser")
 
-      -- setup() に渡す skkserv 設定。通知ブロック側でも参照するため
-      -- 先に変数として持っておく（skk.setup はセットアップ「関数」であり
-      -- オプションテーブルではないので、skk.setup.skkserv のような参照は
-      -- 「関数を index しようとしてエラー」になる）。
+      -- setup() に渡す skkserv 設定。
       local skkserv_opts = {
         host = "127.0.0.1",
         port = 1178,
         encoding = "euc-jp",
-        debug = false, -- ★暫定：debug=true は速度調査用。原因特定後に削除
-        -- 起動時の疎通確認（skk.setup()が自動実行、skkserv.check_connection、
-        -- 省略時true）1回あたりのタイムアウト。省略時2000msだが、大きな辞書
-        -- （jawiki等）読み込み中の混雑を見込んで長めに取ってあるため、その分
-        -- 起動時の体感待ち時間が伸びる。環境に合わせて短くしたい場合はここを
-        -- 調整する（短くしすぎると、健全な接続でも誤ってタイムアウト扱いに
-        -- なりやすくなる点に注意。lua/skk/init.luaのSkkSetupOptsのdocstring、
-        -- およびREADME.md「SKKサーバーとの通信の信頼性」参照）。
-        check_connection = false,
-        check_connection_timeout_ms = 200,
+        debug = false, -- true にすると送受信の生データを vim.notify() で出す（速度調査用）
+        -- check_connection は既定 false（起動時の自動疎通確認はしない）。
+        -- 手動で確認したいときは :SkkCheckSkkserv を使う。
       }
-      -- local skkserv_opts = { host = "127.0.0.1", port = 1178, encoding = "euc-jp" }
       -- ローカル辞書。空にすると、下の組み込みの小さな確認用辞書が使われる
       -- （dictionaries が空のときに setup() へ渡さないのはこのサンドボックス
       -- だけの便宜機能。skk.nvim 本体の setup() には無い）。
@@ -77,9 +66,6 @@ require("lazy").setup({
         { path = "/usr/local/share/skk/SKK-JISYO.emoji", encoding = "utf-8" },
         { path = "/usr/local/share/skk/SKK-JISYO.emoji-ja", encoding = "utf-8" },
       }
-
-      -- 辞書の読み込み完了数をカウントする変数 for develop
-      local loaded_count = 0
 
       skk.setup({
         skkserv = skkserv_opts,
@@ -157,24 +143,16 @@ require("lazy").setup({
         },
 
         dictionaries = #dictionaries > 0 and dictionaries or nil,
-        -- on_dictionary_loaded = function(path, ok, err)
-        --   vim.schedule(function()
-        --     if ok then
-        --       vim.notify("skk.nvim: dictionary loaded: " .. path)
-        --     else
-        --       vim.notify("skk.nvim: failed to load " .. path .. ": " .. tostring(err), vim.log.levels.WARN)
-        --     end
-        --     -- 辞書のカウントを進める
-        --     loaded_count = loaded_count + 1
-        --   end)
-        -- end,
+        -- 読み込み結果（成功/失敗・時刻）は :SkkDictionaries で後から
+        -- いつでも確認できるので、on_dictionary_loaded での都度通知は
+        -- 使っていない。
       })
 
       if #dictionaries == 0 then
         -- ローカル辞書が指定されていない場合の動作確認用の小さな組み込み辞書
         -- （送りなし・送りあり両方のサンプルを含む）。skkservの疎通確認は
-        -- skk.setup()側で自動的に行われる（skkserv.check_connection、
-        -- 省略時true。lua/skk/init.luaのSkkSetupOptsのdocstring参照）。
+        -- 手動なら :SkkCheckSkkserv、自動にしたければ skkserv.check_connection
+        -- を true にする（lua/skk/init.lua の SkkSetupOpts の docstring参照）。
         local mini_jisyo = table.concat({
           ";; okuri-ari entries.",
           "うごk /動/",
