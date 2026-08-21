@@ -63,13 +63,15 @@ require("lazy").setup({
         -- 調整する（短くしすぎると、健全な接続でも誤ってタイムアウト扱いに
         -- なりやすくなる点に注意。lua/skk/init.luaのSkkSetupOptsのdocstring、
         -- およびREADME.md「SKKサーバーとの通信の信頼性」参照）。
-        check_connection_timeout_ms = 350,
+        check_connection = false,
+        check_connection_timeout_ms = 200,
       }
       -- local skkserv_opts = { host = "127.0.0.1", port = 1178, encoding = "euc-jp" }
       -- ローカル辞書。空にすると、下の組み込みの小さな確認用辞書が使われる
       -- （dictionaries が空のときに setup() へ渡さないのはこのサンドボックス
       -- だけの便宜機能。skk.nvim 本体の setup() には無い）。
       local dictionaries = {
+        -- { path = "/usr/local/share/skk/SKK-JISYO.LL.utf8", encoding = "utf-8" },
         { path = "/usr/local/share/skk/SKK-JISYO.jawiki", encoding = "utf-8" },
         { path = "/usr/local/share/skk/SKK-JISYO.edict2", encoding = "utf-8" },
         { path = "/usr/local/share/skk/SKK-JISYO.emoji", encoding = "utf-8" },
@@ -121,14 +123,14 @@ require("lazy").setup({
         candidate_navigation = { enabled = false },
 
         blink = {
-          max_items = 50,
+          max_items = 30,
           -- 前方一致で取得する読みの上限件数。省略時50
           skip_skkserv = false,
           -- "4"（読み一覧取得）にSKKサーバーを含めるか。省略時false（含める）
           skkserv_candidates = true,
           -- "1"（実際の変換候補=漢字の取得）にSKKサーバーを含めるか。
           -- falseにすると個人辞書・ローカル辞書の候補のみになる。省略時true
-          skkserv_candidate_limit = 50,
+          skkserv_candidate_limit = 30,
           -- SKKサーバーへ実際に"1"を投げる読みの上限件数（skkserv_candidates=true
           -- のときのみ意味を持つ）。増やすほど、ライブ補完メニューの下の方まで
           -- 漢字候補が出るようになる代わりに、その分だけキー入力ごとの直列
@@ -155,17 +157,17 @@ require("lazy").setup({
         },
 
         dictionaries = #dictionaries > 0 and dictionaries or nil,
-        on_dictionary_loaded = function(path, ok, err)
-          vim.schedule(function()
-            if ok then
-              vim.notify("skk.nvim: dictionary loaded: " .. path)
-            else
-              vim.notify("skk.nvim: failed to load " .. path .. ": " .. tostring(err), vim.log.levels.WARN)
-            end
-            -- 辞書のカウントを進める
-            loaded_count = loaded_count + 1
-          end)
-        end,
+        -- on_dictionary_loaded = function(path, ok, err)
+        --   vim.schedule(function()
+        --     if ok then
+        --       vim.notify("skk.nvim: dictionary loaded: " .. path)
+        --     else
+        --       vim.notify("skk.nvim: failed to load " .. path .. ": " .. tostring(err), vim.log.levels.WARN)
+        --     end
+        --     -- 辞書のカウントを進める
+        --     loaded_count = loaded_count + 1
+        --   end)
+        -- end,
       })
 
       if #dictionaries == 0 then
