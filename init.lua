@@ -114,6 +114,11 @@ require("lazy").setup({
         -- candidate_fg = "#2e3440", -- origin "#4c566a",
         -- candidate_bg = "#ebcb8b",
 
+        -- モード切替時にカーソル位置へ一瞬表示するインジケーター（ひら/カタ/latn/ＬＡ）の
+        -- 配色（省略時はNormalFloatのまま、現状と同じ）。試したい場合はコメントを外す:
+        indicator_fg = "#2e3440",
+        indicator_bg = "#ff9e64",
+
         -- 【実機で発見・重要】<C-n>/<C-p> による候補選択フォーカス移動は、
         -- skk.nvim 本体の candidate_navigation（setup()時に既存マッピングを
         -- 1回だけ捕捉してグローバルな <C-n>/<C-p> を張る仕組み）では
