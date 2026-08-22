@@ -52,10 +52,9 @@ require("lazy").setup({
         host = "127.0.0.1",
         port = 1178,
         encoding = "euc-jp",
-        debug = false, -- true にすると送受信の生データを vim.notify() で出す（速度調査用）
-        -- check_connection は既定 false（起動時の自動疎通確認はしない）。
-        -- 手動で確認したいときは :SkkCheckSkkserv を使う。
+        debug = false, -- true にすると送受信の生データを vim.notify() で出す。
       }
+
       -- ローカル辞書。空にすると、下の組み込みの小さな確認用辞書が使われる
       -- （dictionaries が空のときに setup() へ渡さないのはこのサンドボックス
       -- だけの便宜機能。skk.nvim 本体の setup() には無い）。
@@ -70,10 +69,27 @@ require("lazy").setup({
       skk.setup({
         skkserv = skkserv_opts,
         user_dictionary = vim.fn.expand("~/.local/share/skk/SKK-JISYO.user"),
-        enter_key = "<C-j>",
+        dictionaries = #dictionaries > 0 and dictionaries or nil,
+        -- 読み込み結果（成功/失敗・時刻）は :SkkDictionaries で確認する。
+
+        enter_key = "<C-j>", -- 半角英数/全角英数 -> ひらがな。henkan 中は <CR> 相当（確定）。省略時 "<C-j>"
+        -- バッファとコマンドラインで別のキーにしたい場合（他プラグインとの競合回避等）は
+        -- enter_key の代わりに、または enter_key と併用して次の2つを指定する：
+        -- buffer_enter_key = "<C-j>",
+        -- cmdline_enter_key = "<C-j>",
+
+        -- l/q/L・abbrev開始（"/"）の物理キー。他プラグイン（skkeleton等）との共存や
+        -- キーボード配列の都合で変えたい場合に指定する。省略時は現状通り。
+        -- char_key_to_ascii = "l",         -- ひらがな/カタカナ -> 半角英数
+        -- char_key_to_kata_or_hira = "q",  -- ひらがな<->カタカナの相互遷移
+        -- char_key_to_zenei = "L",         -- ひらがな/カタカナ -> 全角英数
+        -- abbrev_key = "/",                -- abbrevモード開始
+
         sticky_shift_enabled = true,
         sticky_shift_key = ";",
+
         egg_like_newline = true,
+
         candidate_window = {
           border = "rounded",
           -- "rounded"/"single"/"double"/"none"/自前の文字配列。省略時 "rounded"
@@ -83,18 +99,19 @@ require("lazy").setup({
           -- false にすると最下行のページ表示（"2/3"など）を出さない
           threshold = 2,
           -- 省略時のデフォルト。1にすると、これまで通り最初の<SPC>で即ウィンドウ表示
-          --
+
           -- 配色（すべて省略時はカラースキームのNormalFloat/FloatBorderのまま、
           -- 現状と同じ見た目）。試したい場合はコメントを外す:
-          -- fg = "#d8dee9", bg = "#2e3440",       -- 非選択の候補行
+          -- fg = "#d8dee9",
+          -- bg = "#2e3440", -- 非選択の候補行
           border_fg = "#88c0d0", -- 枠線
           alt_bg = "#1b4252", -- 1行おきの縞模様（可読性向上、省略時は縞なし）
         },
 
         -- ▽/▼のインライン表示の配色（省略時はComment/IncSearchのまま、現状と同じ）。
         -- candidate_fg/bgは候補ウィンドウの選択行のハイライトにも連動する。
-        midashi_fg = "#ff9e64", -- "#81a1c1",
-        -- candidate_fg = "#000000", -- "#4c566a",
+        midashi_fg = "#ff9e64", -- origin "#81a1c1",
+        -- candidate_fg = "#2e3440", -- origin "#4c566a",
         -- candidate_bg = "#ebcb8b",
 
         -- 【実機で発見・重要】<C-n>/<C-p> による候補選択フォーカス移動は、
@@ -141,33 +158,28 @@ require("lazy").setup({
           -- google-japanese-input = disable も検討できる。
           debug_timing = false,
         },
-
-        dictionaries = #dictionaries > 0 and dictionaries or nil,
-        -- 読み込み結果（成功/失敗・時刻）は :SkkDictionaries で後から
-        -- いつでも確認できるので、on_dictionary_loaded での都度通知は
-        -- 使っていない。
       })
 
-      if #dictionaries == 0 then
-        -- ローカル辞書が指定されていない場合の動作確認用の小さな組み込み辞書
-        -- （送りなし・送りあり両方のサンプルを含む）。skkservの疎通確認は
-        -- 手動なら :SkkCheckSkkserv、自動にしたければ skkserv.check_connection
-        -- を true にする（lua/skk/init.lua の SkkSetupOpts の docstring参照）。
-        local mini_jisyo = table.concat({
-          ";; okuri-ari entries.",
-          "うごk /動/",
-          "あかk /赤/",
-          ";; okuri-nasi entries.",
-          "かんじ /漢字/幹事/監事/",
-          "うごく /動く/",
-          "あい /愛/",
-          "にほん /日本/",
-        }, "\n")
-        dict.set_dict(parser.parse(mini_jisyo))
-        vim.schedule(function()
-          vim.notify("skk.nvim: using built-in mini dictionary (init.lua の dictionaries を編集してください)")
-        end)
-      end
+      -- if #dictionaries == 0 then
+      --   -- ローカル辞書が指定されていない場合の動作確認用の小さな組み込み辞書
+      --   -- （送りなし・送りあり両方のサンプルを含む）。skkservの疎通確認は
+      --   -- 手動なら :SkkCheckSkkserv、自動にしたければ skkserv.check_connection
+      --   -- を true にする（lua/skk/init.lua の SkkSetupOpts の docstring参照）。
+      --   local mini_jisyo = table.concat({
+      --     ";; okuri-ari entries.",
+      --     "うごk /動/",
+      --     "あかk /赤/",
+      --     ";; okuri-nasi entries.",
+      --     "かんじ /漢字/幹事/監事/",
+      --     "うごく /動く/",
+      --     "あい /愛/",
+      --     "にほん /日本/",
+      --   }, "\n")
+      --   dict.set_dict(parser.parse(mini_jisyo))
+      --   vim.schedule(function()
+      --     vim.notify("skk.nvim: using built-in mini dictionary (init.lua の dictionaries を編集してください)")
+      --   end)
+      -- end
     end,
   },
 
